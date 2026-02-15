@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   LayoutDashboard, 
   Users, 
@@ -7,12 +7,9 @@ import {
   Megaphone, 
   CreditCard, 
   BarChart3, 
-  Settings2,
   ChevronLeft,
   Search,
   CheckCircle2,
-  Clock,
-  TrendingUp,
   Target,
   Zap,
   Globe,
@@ -23,11 +20,21 @@ import {
   ShieldCheck,
   History,
   Lock,
-  Calculator
+  Calculator,
+  FileText,
+  TrendingUp,
+  DollarSign,
+  AlertCircle,
+  XCircle,
+  MinusCircle,
+  Info,
+  Clock,
+  TrendingDown,
+  PhoneCall
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  PieChart, Pie, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, AreaChart, Area
+  Cell, PieChart, Pie, AreaChart, Area, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar
 } from 'recharts';
 import RequirementTable from './components/RequirementTable';
 import InfoCard from './components/InfoCard';
@@ -38,11 +45,12 @@ const App: React.FC = () => {
   const menuItems = [
     { id: 'intro', label: 'מבוא ויעדים', icon: <Target size={20} /> },
     { id: 'marketing', label: 'שיווק, מכירות ותקשורת', icon: <Megaphone size={20} /> },
-    { id: 'projects', label: 'ניהול פרויקטים מורחב', icon: <Briefcase size={20} /> },
+    { id: 'projects', label: 'ניהול פרויקט מורחב', icon: <Briefcase size={20} /> },
     { id: 'hr', label: 'הון אנושי ופיתוח', icon: <Users size={20} /> },
     { id: 'finance', label: 'פיננסים ותפעול', icon: <CreditCard size={20} /> },
     { id: 'dashboard', label: 'דשבורד ובקרה (BI)', icon: <LayoutDashboard size={20} /> },
     { id: 'compare', label: 'השוואת מערכות', icon: <Search size={20} /> },
+    { id: 'summary', label: 'סיכום אפיון ותקציב', icon: <FileText size={20} /> },
   ];
 
   // Visual Charts Data
@@ -77,7 +85,160 @@ const App: React.FC = () => {
     { subject: 'עמידה באפיון', Monday: 78, Firebarry: 95, Hubspot: 83, Custom: 94 },
   ];
 
-  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
+  // ALL 100+ items from the provided specification text
+  const fullComparisonRows = [
+    // תמחור ועמידה בביצוע
+    { cat: 'תמחור', req: 'עלות הקמה משוערת', mon: '75000', hub: '125000', fir: '135000', sca: '39000', ori: '35000-45000', fix: '28000' },
+    { cat: 'תמחור', req: 'עלות חודשית משוערת למשתמש', mon: '120', hub: '215', fir: '175', sca: '180', ori: '205', fix: '450' },
+    { cat: 'תמחור', req: 'תלות במערכות בינה מלאכותית נוספות', mon: 'גבוהה מאוד', hub: 'גבוהה מאוד', fir: 'גבוהה', sca: 'לא קיימת', ori: 'סבירה', fix: 'נמוכה' },
+    { cat: 'תמחור', req: 'תוספת לעלות חודשית - כלים ואינטגרציות', mon: '5000', hub: '5000', fir: '7000', sca: '0', ori: '1000', fix: '0' },
+    { cat: 'תמחור', req: 'סך עלות חודשית (13 משתמשים)', mon: '6560', hub: '7795', fir: '9275', sca: '2340', ori: '3665', fix: '5850' },
+
+    // ניהול קמפיינים רב-ערוצי
+    { cat: 'שיווק', req: 'חיבור Native ל-Meta ו-Google Ads', mon: 'אין', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'יש' },
+    { cat: 'שיווק', req: 'טפסי אינטרנט מעוצבים (HTML/CSS) + שדות מוסתרים', mon: 'אין', hub: 'אין', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'יש' },
+    { cat: 'שיווק', req: 'טפסי צור קשר מעוצבים + שדות מוסתרים', mon: 'אין', hub: 'אין', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'שיווק', req: 'ניהול מעגל הצלחה/כישלון ללא Zapier/Make', mon: 'אין', hub: 'אין', fir: 'אין', sca: 'יש', ori: 'חלקי', fix: 'יש' },
+    { cat: 'שיווק', req: 'שליטה במבנה הליד ללא פיתוח (ע"י משתמש)', mon: 'יש', hub: 'אין', fir: 'אין', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'שיווק', req: 'קמפיין דיוור גרפי, סגמנטציה וניטור', mon: 'אין', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'יש' },
+    { cat: 'שיווק', req: 'ניהול מסרים אוט׳ לפי בחירה / סוג שדה', mon: 'אין', hub: 'אין', fir: 'יש', sca: 'יש', ori: 'אין', fix: 'אין' },
+    { cat: 'שיווק', req: 'הקמת שדות אפיון מלאים (שם/נייד/מקור/קמפיין)', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'שיווק', req: 'הקצאת שדות אוטומטית לסינון ללא מגע אדם', mon: 'אין', hub: 'אין', fir: 'אין', sca: 'יש', ori: 'אין', fix: 'יש' },
+
+    // תקשורת ואוטומציות
+    { cat: 'תקשורת', req: 'וואטסאפ רשמי ללא תכנית AI', mon: 'אין', hub: 'אין', fir: 'אין', sca: 'יש', ori: 'יש', fix: 'יש' },
+    { cat: 'תקשורת', req: 'וואטסאפ לא רשמי ללא תכנית AI', mon: 'אין', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'יש' },
+    { cat: 'תקשורת', req: 'בוט שירות/מכירה אינטגרלי', mon: 'אין', hub: 'אין', fir: 'אין', sca: 'יש', ori: 'אין', fix: 'אין' },
+    { cat: 'תקשורת', req: 'חיבור Google/Office 365', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'יש' },
+    { cat: 'תקשורת', req: 'תקשורת כתובה מבוססת דוא״ל', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'יש' },
+    { cat: 'תקשורת', req: 'אוטומציות מענה מפורט והתראות לפי סגמנט', mon: 'אין', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'אין', fix: 'אין' },
+
+    // ניהול פרויקטים
+    { cat: 'פרויקטים', req: 'תמיכה בסוג פרויקט - fix', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'פרויקטים', req: 'תמיכה בסוג פרויקט - תקציב קבוע', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'פרויקטים', req: 'תמיכה בסוג פרויקט - בנק שעות', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'פרויקטים', req: 'ניהול פרוייקט לקוח | חברה | איש קשר', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'פרויקטים', req: 'ניהול פרוייקט פנים ארגוני (ללא לקוח)', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'פרויקטים', req: 'הגדרת היררכיה מלאה (פרויקט > אבן דרך > משימה)', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'פרויקטים', req: 'ניהול גאנט וציר זמן מלא', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'פרויקטים', req: 'ניהול אבני דרך ומשימות', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'פרויקטים', req: 'הגדרת תקציבים והקצאות', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'פרויקטים', req: 'ניהול מסמכים ועדכונים', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'יש' },
+    { cat: 'פרויקטים', req: 'לוג שינויים והרשאות דיווח', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'פרויקטים', req: 'תצוגות קנבן, בורד ותרשימים', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'פרויקטים', req: 'ניהול הצעות מחיר מקושרות פרויקט', mon: 'אין', hub: 'אין', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'יש' },
+    { cat: 'פרויקטים', req: 'הגדרת פעילויות (משימה/אירוע/אבן דרך)', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'פרויקטים', req: 'הגדרת שדות דיווח ומדידה (שם/סטטוס/תקציב)', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'פרויקטים', req: 'הגדרת קצבי התקדמות', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'פרויקטים', req: 'ניהול משימות ותת משימות מלא', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'פרויקטים', req: 'ניהול log פרויקטאלי', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'פרויקטים', req: 'הגדרת הקצאות משימות והצרכתן', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'פרויקטים', req: 'דוחות ייעודיים - צפייה', mon: 'חלקי', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'פרויקטים', req: 'דוחות ייעודיים - דחיפה אוטומטית', mon: 'חלקי', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'פרויקטים', req: 'דשבורד תפוקה, עומסים ומדידת מחלקה', mon: 'חלקי', hub: 'חלקי', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'פרויקטים', req: 'ניהול מסמכים לפרויקט', mon: 'יש', hub: 'חלקי', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'פרויקטים', req: 'ניהול סטטוסים אוטומטיים לפרויקט', mon: 'יש', hub: 'חלקי', fir: 'אין', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'פרויקטים', req: 'הגדרת תרשימים לפרויקט', mon: 'יש', hub: 'חלקי', fir: 'אין', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'פרויקטים', req: 'שדות ייעודיים למשימות (סטטוס/עדיפות)', mon: 'יש', hub: 'חלקי', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'פרויקטים', req: 'שדות ייעודיים לאבני דרך (תקציב/שעות)', mon: 'יש', hub: 'חלקי', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'פרויקטים', req: 'טופס Onboarding דיגיטלי לפרויקט', mon: 'יש', hub: 'חלקי', fir: 'יש', sca: 'יש', ori: 'חלקי', fix: 'אין' },
+    { cat: 'פרויקטים', req: 'מדדי יעילות (תקציב, לו"ז, אבני דרך)', mon: 'יש', hub: 'חלקי', fir: 'יש', sca: 'יש', ori: 'חלקי', fix: 'אין' },
+    { cat: 'פרויקטים', req: 'המערכת תאפשר הגדרת עלויות לפרויקט', mon: 'יש', hub: 'חלקי', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'פרויקטים', req: 'המערכת תאפשר הגדרת רווחיות לפרויקט', mon: 'יש', hub: 'חלקי', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'פרויקטים', req: 'המערכת תאפשר Burn rate אקטיבי', mon: 'יש', hub: 'חלקי', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'פרויקטים', req: 'מדד יעילות פנים ארגוני לשעות פיקס', mon: 'יש', hub: 'חלקי', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+
+    // כללי
+    { cat: 'כללי', req: 'מחולל דוחות אינטראקטיבי', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'אין', fix: 'יש' },
+    { cat: 'כללי', req: 'מחולל דשבורד נתונים אינטראקטיבי', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'יש' },
+    { cat: 'כללי', req: 'ניהול אירועים ופגישות (זמן עבודה)', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'אין', fix: 'יש' },
+    { cat: 'כללי', req: 'הגדרת KPI לכל סגמנט ומדידתם', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'אין', fix: 'יש' },
+    { cat: 'כללי', req: 'יכולת ניהול מדידת KPI', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'יש' },
+    { cat: 'כללי', req: 'ניהול משימות ללא תלות פרויקטאלית', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'יש' },
+    { cat: 'כללי', req: 'מחולל נתונים המציג משימות ואירועים', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'יש' },
+    { cat: 'כללי', req: 'ניהול הרשאות משתמשים קשיח', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'יש' },
+    { cat: 'כללי', req: 'חיתום דיגיטלי והמרה לעדכון כרטסת', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'אין', fix: 'יש' },
+
+    // HR
+    { cat: 'HR', req: 'ניהול HR כפרויקט פנימי מסווג', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'HR', req: 'ניהול תכניות עבודה שנתיות (הדרכה)', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'HR', req: 'מדידת פרויקט פנים לפי יעדים וביצוע', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'HR', req: 'שיוך ש"ע בפועל לשעות כוללות לעובד', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'HR', req: 'תאריך תפוגת הסמכה ותזכורת אוטומטית', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'HR', req: 'פרויקט משובים ותיעוד שיחות חתך', mon: 'אין', hub: 'אין', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'HR', req: 'תהליך יצירת עובד חדש דיגיטלי + צ׳ק ליסט', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'HR', req: 'מעקב שעות הדרכה והתראות אי-ביצוע', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'HR', req: 'ניהול עובדים (שכר/תעריף/משרה/יעדים)', mon: 'יש', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+
+    // ספקים
+    { cat: 'ספקים', req: 'ניהול ספקים ברמות שונות', mon: 'אין', hub: 'אין', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'ספקים', req: 'ניהול ספק לפרויקט כקבלן משנה', mon: 'אין', hub: 'אין', fir: 'אין', sca: 'יש', ori: 'יש', fix: 'אין' },
+    { cat: 'ספקים', req: 'שליטה בשדות ייעודיים להקמת ספק', mon: 'אין', hub: 'אין', fir: 'אין', sca: 'יש', ori: 'יש', fix: 'אין' },
+
+    // מכירות
+    { cat: 'מכירות', req: 'Pipeline מכירות מלא: ליד > המרה > לקוח', mon: 'אין', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'יש' },
+    { cat: 'מכירות', req: 'המרה אוטומטית מכלי שיווק ופרסום', mon: 'אין', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'יש' },
+    { cat: 'מכירות', req: 'מענה אוטומטי שיווקי לפי סגמנטציה', mon: 'אין', hub: 'יש', fir: 'אין', sca: 'יש', ori: 'יש', fix: 'יש' },
+    { cat: 'מכירות', req: 'שמירת היסטוריה מלאה (וואטסאפ/דואל/מסמכים)', mon: 'אין', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'יש' },
+    { cat: 'מכירות', req: 'ייצור אוטומציות פנים וחוץ לפי סטטוס', mon: 'אין', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'יש' },
+    { cat: 'מכירות', req: 'עבודה במודל הזדמנויות / פניות', mon: 'אין', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'יש' },
+    { cat: 'מכירות', req: 'סטטוס מעקב מכרז ותתי-סטטוסים', mon: 'אין', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'יש' },
+    { cat: 'מכירות', req: 'המקת הצעות מחיר וחיתום דיגיטלי', mon: 'אין', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'יש' },
+    { cat: 'מכירות', req: 'Overview ניהולי: משפכים ומדידת אנשי מכירות', mon: 'אין', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'יש' },
+    { cat: 'מכירות', req: 'ניהול מכרזים עם דד-ליין והתראה', mon: 'אין', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'יש' },
+
+    // לקוחות
+    { cat: 'לקוחות', req: 'הפרדה קשיחה פונה/לקוח כולל יחס המרה', mon: 'אין', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'יש' },
+    { cat: 'לקוחות', req: 'חישוב יחס המרה אוטומטי', mon: 'אין', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'יש' },
+    { cat: 'לקוחות', req: 'שליטה במסכים והקמת שדות ללא הגבלה', mon: 'אין', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'יש' },
+    { cat: 'לקוחות', req: 'Overview מלא על מערך פניות/לקוחות', mon: 'אין', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'יש' },
+    { cat: 'לקוחות', req: 'כרטסת עמוקה (תשלומים/מסמכים/תקשורת)', mon: 'אין', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'יש' },
+    { cat: 'לקוחות', req: 'אוטומציה ודיוור תקופתי לפי סגמנט', mon: 'אין', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'יש' },
+    { cat: 'לקוחות', req: 'ניהול פעילויות והקצאת לקוח לעובד', mon: 'אין', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'יש' },
+
+    // כספים
+    { cat: 'כספים', req: 'חיבור לחשבונית ירוקה / סאמיט', mon: 'אין', hub: 'יש', fir: 'יש', sca: 'סאמיט', ori: 'בדיקה', fix: 'אין' },
+    { cat: 'כספים', req: 'חיתום דיגיטלי וסליקה באשראי להצעות', mon: 'אין', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'אין', fix: 'יש' },
+    { cat: 'כספים', req: 'תבניות מעוצבות להצעות מחיר (ללא מגבלה)', mon: 'אין', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'אין', fix: 'אין' },
+    { cat: 'כספים', req: 'מדידת המרות, תנאי תשלום ואוטומציות', mon: 'אין', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'יש', fix: 'יש' },
+    { cat: 'כספים', req: 'נתונים כספיים בדשבורד אינטראקטיבי', mon: 'אין', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'בדיקה', fix: 'יש' },
+    { cat: 'כספים', req: 'הקצאת יעדי כספים KPI ומדידתם', mon: 'אין', hub: 'יש', fir: 'יש', sca: 'יש', ori: 'בדיקה', fix: 'אין' },
+
+    // טלפוניה
+    { cat: 'טלפוניה', req: 'התממשקות למרכזיה (Click to Call)', mon: 'אין', hub: 'אין', fir: 'יש', sca: 'יש', ori: 'בדיקה', fix: 'אין' },
+    { cat: 'טלפוניה', req: 'הצמדת שיחה ללקוח / טיקט / פניה', mon: 'אין', hub: 'אין', fir: 'יש', sca: 'יש', ori: 'בדיקה', fix: 'אין' },
+    { cat: 'טלפוניה', req: 'ניטור תסריט שיחה לסגמנטציה', mon: 'אין', hub: 'אין', fir: 'יש', sca: 'יש', ori: 'בדיקה', fix: 'אין' },
+  ];
+
+  // Compliance Calculation Logic
+  const complianceData = useMemo(() => {
+    const vendors = ['mon', 'hub', 'fir', 'sca', 'ori', 'fix'];
+    const names = { mon: 'Monday', hub: 'Hubspot', fir: 'Firebarry', sca: 'Scalla', ori: 'Origami', fix: 'Fix Digital' };
+    return vendors.map(v => {
+      let score = 0;
+      let total = 0;
+      fullComparisonRows.forEach(row => {
+        if (row.cat === 'תמחור') return;
+        total++;
+        const val = (row as any)[v];
+        if (val === 'יש') score += 1;
+        if (val === 'חלקי' || val === 'בדיקה' || val === 'סאמיט') score += 0.5;
+      });
+      return { 
+        name: names[v as keyof typeof names], 
+        percentage: Math.round((score / total) * 100) 
+      };
+    }).sort((a, b) => b.percentage - a.percentage);
+  }, []);
+
+  const COMPLIANCE_COLORS = ['#1e3a8a', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b'];
+
+  const StatusIcon = ({ status }: { status: string }) => {
+    if (status === 'יש') return <CheckCircle2 className="text-emerald-500" size={18} />;
+    if (status === 'אין') return <XCircle className="text-red-400" size={18} />;
+    if (status === 'חלקי' || status === 'בדיקה' || status === 'סאמיט') return <MinusCircle className="text-amber-400" size={18} />;
+    return <span className="text-[11px] text-slate-600 font-bold">{status}</span>;
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -104,14 +265,14 @@ const App: React.FC = () => {
             </header>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <InfoCard title="ייעול תהליכים (Process Optimization)" icon={<Zap />}>
+              <InfoCard title="ייעול תהליכים" icon={<Zap />}>
                 מעבר מאקסלים מבוזרים למסד נתונים רלציוני המאפשר אוטומציה של זרימת הנתונים בין מחלקות השיווק, התפעול והכספים.
               </InfoCard>
-              <InfoCard title="מבט ניהולי (BI Executive View)" icon={<BarChart3 />}>
+              <InfoCard title="מבט ניהולי" icon={<BarChart3 />}>
                 דאשבורדים דינמיים בזמן אמת המציגים רווחיות פרויקטלית, עומסי עבודה מחלקתיים ומדדי ניצול משאבים.
               </InfoCard>
-              <InfoCard title="שקיפות ובקרה (Control & Audit)" icon={<ShieldCheck />}>
-                תיעוד מלא של לוג שינויים, ניהול הרשאות קשיח (HR/פיננסי) ואוטומציות המונעות חריגות תקציביות.
+              <InfoCard title="שקיפות ובקרה" icon={<ShieldCheck />}>
+                תיעוד מלא של לוג שינויים, ניהול הרשאות קשיח ואוטומציות המונעות חריגות תקציביות.
               </InfoCard>
             </div>
           </div>
@@ -121,79 +282,39 @@ const App: React.FC = () => {
         return (
           <div className="space-y-8 animate-in fade-in duration-500">
             <h2 className="text-4xl font-black text-slate-800 border-r-8 border-blue-600 pr-4 inline-block mb-4">שיווק, פרסום ותקשורת כתובה</h2>
-            
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="space-y-6">
                 <InfoCard title="ניהול קמפיינים רב-ערוצי" icon={<Globe />}>
                   <ul className="space-y-3 text-sm">
-                    <li className="flex gap-2">
-                      <CheckCircle2 size={16} className="text-blue-500 flex-shrink-0" />
-                      <span>חיבור Native ל-Meta ו-Google Ads לניטור קמפיינים נפרד ומקביל.</span>
-                    </li>
-                    <li className="flex gap-2">
-                      <CheckCircle2 size={16} className="text-blue-500 flex-shrink-0" />
-                      <span>יכולת הקמת טפסי אינטרנט מעוצבים (HTML/CSS) כולל שדות מוסתרים והטמעה מלאה.</span>
-                    </li>
-                    <li className="flex gap-2">
-                      <CheckCircle2 size={16} className="text-blue-500 flex-shrink-0" />
-                      <span>ניהול מעגל הצלחה/כישלון מלא ללא תלות ב-Zapier/Make.</span>
-                    </li>
+                    <li className="flex gap-2"><CheckCircle2 size={16} className="text-blue-500" /> <span>חיבור Native ל-Meta ו-Google Ads לניטור קמפיינים.</span></li>
+                    <li className="flex gap-2"><CheckCircle2 size={16} className="text-blue-500" /> <span>הקמת טפסי אינטרנט מעוצבים (HTML/CSS) כולל שדות מוסתרים.</span></li>
+                    <li className="flex gap-2"><CheckCircle2 size={16} className="text-blue-500" /> <span>ניהול מעגל הצלחה/כישלון מלא ללא תלות ב-Make/Zapier.</span></li>
+                    <li className="flex gap-2"><CheckCircle2 size={16} className="text-blue-500" /> <span>מערכת דיוור חכמה עם סגמנטציה ותתי-סגמנטציה.</span></li>
                   </ul>
                 </InfoCard>
-
-                <InfoCard title="תקשורת ואוטומציות (Omnichannel)" icon={<MessageSquare />}>
-                  <p className="text-xs font-bold text-slate-400 mb-2 uppercase">ערוצי תקשורת נתמכים:</p>
+                <InfoCard title="תקשורת ואוטומציות" icon={<MessageSquare />}>
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {['וואטסאפ רשמי', 'וואטסאפ לא רשמי', 'בוט שירות/מכירה', 'SMS', 'Email', 'חיבור Google/Office 365'].map(t => (
+                    {['וואטסאפ רשמי', 'וואטסאפ לא רשמי', 'בוט שירות', 'SMS', 'Email'].map(t => (
                       <span key={t} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-bold border border-blue-100">{t}</span>
                     ))}
                   </div>
-                  <ul className="space-y-2 text-sm">
-                    <li>• מענה אוטומטי מפורט לפי קמפיין ספציפי ותיעוד לשדה פנייה.</li>
-                    <li>• פנייה ייחודית לפי סגמנט / מקור פניה / תת-סיווג.</li>
-                    <li>• אוטומציה לא רקרוסיבית בעמידה בתנאי סף ללא מגע אדם.</li>
-                  </ul>
+                  <p className="text-sm">מענה אוטומטי מפורט לפי קמפיין ספציפי ופנייה ייחודית לפי סגמנט לקוח.</p>
                 </InfoCard>
               </div>
-
               <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200">
-                <h4 className="text-xl font-black mb-6 flex items-center gap-2">
-                  <Filter className="text-blue-500" />
-                  שדות נתונים ומבנה הליד
-                </h4>
-                <div className="grid grid-cols-2 gap-4">
-                  {[
-                    'שם מלא / חלוקה שמית', 'נייד', 'מקור / קמפיין / תת קמפיין',
-                    'סיווג ראשי / משני', 'סיווג פניה רף תחתון', 'הקצאה אוטומטית', 'זמני פתיחה | טיפול',
-                    'מזהה מקור הליד', 'דואל', 'אישור דיוור'
-                  ].map(field => (
-                    <div key={field} className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
-                      <span className="text-xs font-semibold text-slate-700">{field}</span>
-                    </div>
+                <h4 className="text-xl font-black mb-6 flex items-center gap-2"><Filter className="text-blue-500" /> שדות הליד באפיון</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  {['שם מלא / חלוקה שמית', 'מקור / קמפיין / תת-קמפיין', 'סיווג ראשי ומשני', 'סיווג פניה רף תחתון', 'הקצאה אוטומטית', 'זמני פתיחה וטיפול', 'אישור דיוור'].map(f => (
+                    <div key={f} className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-[11px] font-semibold text-slate-700">{f}</div>
                   ))}
-                </div>
-                <div className="mt-6 p-4 bg-blue-900 rounded-2xl text-white">
-                  <h5 className="font-bold text-sm mb-2 flex items-center gap-2"><Zap size={14} className="text-blue-400" /> מערך דיוור חכם</h5>
-                  <p className="text-[11px] text-blue-200 leading-relaxed">
-                    יכולת יצירת קמפיין דיוור מבוסס דוא"ל, גרפיקה, עיצוב ומלל. 
-                    ניטור כמותי ומדידה, הגדרת קהלי יעד לפי סגמנטציה והקמת תתי-סגמנטציה.
-                  </p>
                 </div>
               </div>
             </div>
-
-            <RequirementTable 
-              title="שיווק, מכירות ותקשורת" 
-              requirements={[
-                { id: 'm1', category: 'Marketing', feature: 'ניהול קמפיינים Meta/Google', priority: 'High', description: 'ניטור נפרד ומקביל ללא תלות כמותית' },
-                { id: 'm2', category: 'Marketing', feature: 'טפסי HTML/CSS עצמאיים', priority: 'High', description: 'כולל שדות מוסתרים והטמעה מלאה' },
-                { id: 'm3', category: 'Marketing', feature: 'מערך אוטומציות לקוח', priority: 'High', description: 'פניה ייחודית לפי סגמנט/מקור/קמפיין' },
-                { id: 'm4', category: 'Marketing', feature: 'תקשורת רב-ערוצית (וואטסאפ/SMS)', priority: 'High', description: 'וואטסאפ רשמי/לא רשמי ובוט שירות' },
-                { id: 'm5', category: 'Marketing', feature: 'טיוב שדות אוטומטי', priority: 'High', description: 'הקצאת נתונים אוטומטית לסינון ללא מגע אדם' },
-                { id: 'm6', category: 'Marketing', feature: 'מערכת דיוור גרפית מורכבת', priority: 'Medium', description: 'ניטור כמותי ומדידת קמפיין דיוור' },
-              ]} 
-            />
+            <RequirementTable title="שיווק ומכירות" requirements={
+              fullComparisonRows.filter(r => r.cat === 'שיווק' || r.cat === 'תקשורת').map(r => ({
+                id: r.req, category: r.cat, feature: r.req, priority: 'High', description: 'דרישת אפיון ליבה למערכת ה-CRM'
+              }))
+            } />
           </div>
         );
 
@@ -201,158 +322,66 @@ const App: React.FC = () => {
         return (
           <div className="space-y-8 animate-in fade-in duration-500">
              <h2 className="text-4xl font-black text-slate-800 border-r-8 border-emerald-600 pr-4 inline-block mb-4">ניהול פרויקטים מורחב</h2>
-             
              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                <div className="lg:col-span-2 space-y-6">
-                 <InfoCard title="ישויות וסוגי פרויקטים" icon={<Layers />}>
-                    <div className="grid grid-cols-2 gap-6 text-sm">
-                      <div>
-                        <h5 className="font-bold text-slate-800 mb-3 border-b pb-1 underline decoration-emerald-200">סוגי התקשרות</h5>
-                        <ul className="space-y-2 font-semibold">
-                          <li className="flex items-center gap-2"><div className="w-2 h-2 bg-emerald-500 rounded-full"></div> פרויקט Fix (אבני דרך)</li>
-                          <li className="flex items-center gap-2"><div className="w-2 h-2 bg-emerald-500 rounded-full"></div> ריטיינר חודשי</li>
-                          <li className="flex items-center gap-2"><div className="w-2 h-2 bg-emerald-500 rounded-full"></div> בנק שעות</li>
-                        </ul>
+                 <InfoCard title="מבנה היררכי וישויות" icon={<Layers />}>
+                    <p className="mb-4 font-semibold text-slate-700">היררכיה בסיסית: פרויקט > לקוח > עובדים > אבן דרך > משימה > דיווח > בקרה > בילינג.</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                        <h6 className="font-bold text-emerald-800 text-xs mb-2">סוגי התקשרות נתמכים</h6>
+                        <ul className="text-xs space-y-1 font-medium"><li>• פרויקט Fix (אבני דרך)</li><li>• בנק שעות</li><li>• ריטיינר חודשי</li></ul>
                       </div>
-                      <div>
-                        <h5 className="font-bold text-slate-800 mb-3 border-b pb-1 underline decoration-emerald-200">ישויות לפרויקט</h5>
-                        <ul className="space-y-2">
-                          <li className="flex items-center gap-2 font-medium">מנהל/ת פרויקט | מנהל | הנהלה | ספק</li>
-                          <li className="flex items-center gap-2 font-medium">הקבלת לקוח לפרויקט / פרויקט ארגוני</li>
-                        </ul>
+                      <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                        <h6 className="font-bold text-blue-800 text-xs mb-2">פעילויות ושדות</h6>
+                        <ul className="text-xs space-y-1 font-medium"><li>• משימה / אירוע / אבן דרך</li><li>• לוג פרויקטאלי מלא</li><li>• Burn rate בזמן אמת</li></ul>
                       </div>
                     </div>
                  </InfoCard>
-
-                 <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
-                    <h4 className="font-bold mb-6 flex items-center gap-2">
-                      <FileSignature className="text-emerald-600" />
-                      הצעות מחיר, סטטוסים וחיתום דיגיטלי
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                      <div className="p-4 bg-slate-50 rounded-xl">
-                        <h6 className="font-bold mb-2">ניהול הצעות מחיר</h6>
-                        <p>הצעות מחיר מקושרות חברה/לקוח, הגדרת סטטוסים ואוטומציות לחיתום דיגיטלי מלא.</p>
-                      </div>
-                      <div className="p-4 bg-slate-50 rounded-xl">
-                        <h6 className="font-bold mb-2">פעילויות ושדות מותאמים</h6>
-                        <p>הגדרת פעילויות (משימה, אירוע, אבן דרך) ושדות ייעודיים לפי סוג הפרויקט.</p>
-                      </div>
-                    </div>
-                 </div>
                </div>
-
-               <div className="space-y-6">
-                 <div className="bg-emerald-900 p-8 rounded-[2rem] text-white shadow-xl relative overflow-hidden">
-                   <h4 className="text-xl font-black mb-6">יכולות ניהול ליבה</h4>
-                   <ul className="space-y-3 text-sm font-medium">
-                     <li className="flex gap-2"><CheckCircle2 size={16} className="text-emerald-400" /> ניהול גאנט וציר זמן מלא</li>
-                     <li className="flex gap-2"><CheckCircle2 size={16} className="text-emerald-400" /> ניהול אבני דרך ומשימות</li>
-                     <li className="flex gap-2"><CheckCircle2 size={16} className="text-emerald-400" /> הגדרת תקציבים והקצאות</li>
-                     <li className="flex gap-2"><CheckCircle2 size={16} className="text-emerald-400" /> ניהול מסמכים ועדכונים</li>
-                     <li className="flex gap-2"><CheckCircle2 size={16} className="text-emerald-400" /> לוג שינויים והרשאות דיווח</li>
-                     <li className="flex gap-2"><CheckCircle2 size={16} className="text-emerald-400" /> תצוגות קנבן, בורד ותרשימים</li>
-                   </ul>
-                 </div>
+               <div className="bg-emerald-900 p-8 rounded-[2rem] text-white shadow-xl relative overflow-hidden">
+                 <h4 className="text-xl font-black mb-6">יכולות ניהול ליבה</h4>
+                 <ul className="space-y-3 text-sm font-light">
+                   <li className="flex gap-2"><CheckCircle2 size={16} className="text-emerald-400" /> ניהול גאנט וציר זמן מלא</li>
+                   <li className="flex gap-2"><CheckCircle2 size={16} className="text-emerald-400" /> הגדרת תקציבים והקצאות</li>
+                   <li className="flex gap-2"><CheckCircle2 size={16} className="text-emerald-400" /> ניהול מסמכים ועדכונים</li>
+                   <li className="flex gap-2"><CheckCircle2 size={16} className="text-emerald-400" /> דשבורד תפוקה ועומסי צוות</li>
+                   <li className="flex gap-2"><CheckCircle2 size={16} className="text-emerald-400" /> הצעות מחיר וחיתום דיגיטלי</li>
+                 </ul>
                </div>
              </div>
-
-             <RequirementTable 
-              title="ניהול פרויקטים" 
-              requirements={[
-                { id: 'p1', category: 'Project', feature: 'ניהול גאנט וציר זמן מלא', priority: 'High', description: 'כולל ניהול אבני דרך, משימות ותתי משימות מלא' },
-                { id: 'p2', category: 'Project', feature: 'ניהול תקציב ותקציבים מורכב', priority: 'High', description: 'הגדרת תקציב, הקצאות והצרכת משימות לפרויקט' },
-                { id: 'p3', category: 'Project', feature: 'הצעות מחיר וחיתום דיגיטלי', priority: 'High', description: 'קישור לקוח/חברה כולל סטטוסים ואוטומציות חכמות' },
-                { id: 'p4', category: 'Project', feature: 'דשבורד תפוקה ועומסים', priority: 'High', description: 'הגדרת דוחות ודשבורדים ייעודיים לניטור עומסי צוות' },
-                { id: 'p5', category: 'Project', feature: 'ניהול מסמכים ועדכונים', priority: 'Medium', description: 'ניהול פנימי/חיצוני של מסמכים ועדכונים לפרויקט' },
-                { id: 'p6', category: 'Project', feature: 'תצוגות מגוונות (קנבן/בורד)', priority: 'Medium', description: 'הגדרת משימות במגוון תצוגות ותרשימים לפרויקט' },
-              ]} 
-            />
+             <RequirementTable title="ניהול פרויקטים" requirements={
+               fullComparisonRows.filter(r => r.cat === 'פרויקטים').map(r => ({
+                 id: r.req, category: r.cat, feature: r.req, priority: 'High', description: 'דרישת אפיון פרויקטאלית'
+               }))
+             } />
           </div>
         );
 
       case 'hr':
         return (
           <div className="space-y-8 animate-in fade-in duration-500">
-            <h2 className="text-4xl font-black text-slate-800 border-r-8 border-indigo-600 pr-4 inline-block mb-4">ניהול הון אנושי ופיתוח (HR & L&D)</h2>
-            
+            <h2 className="text-4xl font-black text-slate-800 border-r-8 border-indigo-600 pr-4 inline-block mb-4">ניהול הון אנושי (HR)</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-               <div className="space-y-6">
-                 <InfoCard title="ישות עובד - נתונים עמוקים" icon={<Users />}>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
-                        <h6 className="font-bold text-indigo-700 text-xs mb-2 flex items-center gap-1"><CreditCard size={12}/> נתונים פיננסיים</h6>
-                        <ul className="text-[11px] text-slate-600 space-y-1">
-                          <li>• עלות שכר מעביד</li>
-                          <li>• תקורה מחלקתית משויכת</li>
-                          <li>• הגדרת שעות תקן חודשיות</li>
-                        </ul>
-                      </div>
-                      <div className="p-4 bg-purple-50 rounded-2xl border border-purple-100">
-                        <h6 className="font-bold text-purple-700 text-xs mb-2 flex items-center gap-1"><Target size={12}/> פיתוח מקצועי (L&D)</h6>
-                        <ul className="text-[11px] text-slate-600 space-y-1">
-                          <li>• תוכנית הדרכה שנתית</li>
-                          <li>• מונה שעות הדרכה אוטומטי</li>
-                          <li>• סטטוס הסמכות ותאריכי תפוגה</li>
-                        </ul>
-                      </div>
-                    </div>
-                 </InfoCard>
-
-                 <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-indigo-500"></div>
-                    <h4 className="font-bold mb-6 flex items-center gap-2"><Zap className="text-indigo-500" /> Workflows ב-HR</h4>
-                    <ul className="space-y-4 text-sm font-medium">
-                      <li className="flex items-start gap-3">
-                        <div className="w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 text-xs mt-0.5">1</div>
-                        <div>
-                          <p className="text-slate-800">תהליך Onboarding אוטומטי</p>
-                          <p className="text-[10px] text-slate-400 font-normal">צ'ק-ליסט למנהלת תפעול: חוזה, חומרה, הרשאות.</p>
-                        </div>
-                      </li>
-                      <li className="flex items-start gap-3">
-                        <div className="w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 text-xs mt-0.5">2</div>
-                        <div>
-                          <p className="text-slate-800">מעקב שעות הדרכה</p>
-                          <p className="text-[10px] text-slate-400 font-normal">התראה למנהל אם עובד לא דיווח הדרכה רבעונית.</p>
-                        </div>
-                      </li>
-                    </ul>
-                 </div>
-               </div>
-
-               <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
-                  <h4 className="font-bold mb-6 flex items-center gap-2"><MessageSquare className="text-indigo-500" /> מנגנון משובים ותיעוד</h4>
-                  <div className="space-y-4">
-                    <div className="p-5 bg-slate-50 rounded-2xl border-r-4 border-indigo-400">
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="font-bold text-sm">כרטסת שיחות (Timeline)</span>
-                        <History size={14} className="text-slate-300" />
-                      </div>
-                      <p className="text-[11px] text-slate-500 leading-relaxed mb-3">סוג שיחה (שנתי/שכר), מראיין, סיכום Rich Text וקבצים מצורפים.</p>
-                      <div className="p-3 bg-white rounded-xl border border-slate-100 text-[10px] text-indigo-600 font-bold">
-                        משימות התפתחות: גזירת משימות ישירות מהמשוב עם תאריך יעד.
-                      </div>
-                    </div>
-                    <div className="p-4 bg-indigo-900 rounded-2xl text-white">
-                      <h5 className="font-bold text-xs mb-2 flex items-center gap-2"><Lock size={12} className="text-indigo-300" /> הפרדת הרשאות קשיחה</h5>
-                      <p className="text-[10px] text-indigo-200 leading-relaxed font-light">
-                        גישה לנתוני שכר, חוזי העסקה ומשובים מוגבלת למנכ"ל, HR ומנהלים ישירים בלבד.
-                      </p>
-                    </div>
+               <InfoCard title="ישות עובד פיננסית" icon={<Users />}>
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="p-3 bg-indigo-50 rounded-xl">שם מלא ופרטי התקשרות</div>
+                    <div className="p-3 bg-indigo-50 rounded-xl">תעריף מכירה ללקוח</div>
+                    <div className="p-3 bg-indigo-50 rounded-xl">יעד שעות הדרכה שנתי</div>
+                    <div className="p-3 bg-indigo-50 rounded-xl">תוקף הסמכות ותזכורות</div>
                   </div>
-               </div>
+               </InfoCard>
+               <InfoCard title="פרויקט משובים ותיעוד" icon={<MessageSquare />}>
+                  <p className="text-sm leading-relaxed">ניהול תיעודי שיחות חתך, ניתוח משובים ומשימות פיתוח עובד כפרויקט פנימי מסווג עם הרשאות מוגבלות.</p>
+                  <div className="mt-4 p-3 bg-slate-900 text-white rounded-xl text-[10px] flex items-center gap-2">
+                    <Lock size={12} className="text-indigo-400" /> גישה מוגבלת למנכ"ל, HR ומנהלים ישירים בלבד.
+                  </div>
+               </InfoCard>
             </div>
-            <RequirementTable 
-              title="הון אנושי ופיתוח" 
-              requirements={[
-                { id: 'h1', category: 'HR', feature: 'ישות עובד פיננסית', priority: 'High', description: 'עלות שכר מעביד ותקורה מחלקתית' },
-                { id: 'h2', category: 'HR', feature: 'תהליך Onboarding אוטומטי', priority: 'High', description: 'פתיחה אוטומטית של רשימת משימות למנהלת תפעול' },
-                { id: 'h3', category: 'HR', feature: 'כרטסת שיחות ומשובים', priority: 'High', description: 'תיעוד שיחות ב-Rich Text כולל קבצים ומשימות התפתחות' },
-                { id: 'h4', category: 'HR', feature: 'מונה שעות הדרכה', priority: 'Medium', description: 'סיכום אוטומטי מדיווחים תחת קטגוריית הדרכה' },
-                { id: 'h5', category: 'HR', feature: 'הפרדת הרשאות קשיחה', priority: 'High', description: 'נעילה הרמטית של נתוני שכר ומשובים' },
-              ]} 
-            />
+            <RequirementTable title="הון אנושי" requirements={
+               fullComparisonRows.filter(r => r.cat === 'HR').map(r => ({
+                 id: r.req, category: r.cat, feature: r.req, priority: 'High', description: 'ניהול עובדים ופיתוח'
+               }))
+             } />
           </div>
         );
 
@@ -360,168 +389,83 @@ const App: React.FC = () => {
         return (
           <div className="space-y-8 animate-in fade-in duration-500">
             <h2 className="text-4xl font-black text-slate-800 border-r-8 border-amber-600 pr-4 inline-block mb-4">פיננסים ותפעול</h2>
-            
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                <div className="lg:col-span-2 space-y-6">
-                 <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
-                   <h4 className="font-bold mb-6 flex items-center gap-2"><Clock className="text-amber-600" /> מבנה דיווח שעות ונוכחות</h4>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-                      <div className="p-5 bg-slate-50 rounded-2xl">
-                        <h6 className="font-bold mb-3 text-amber-800">דיווח שעות פרויקטלי</h6>
-                        <ul className="space-y-2 text-xs">
-                          <li className="flex gap-2">✓ דיוק של רבע שעה</li>
-                          <li className="flex gap-2">✓ בחירת פרויקט + אבן דרך</li>
-                          <li className="flex gap-2">✓ הזנת תיאור עבודה</li>
-                        </ul>
-                      </div>
-                      <div className="p-5 bg-amber-50 rounded-2xl border border-amber-100">
-                        <h6 className="font-bold mb-3 text-amber-800">דיווחי נע"ת (נוכחות)</h6>
-                        <ul className="space-y-2 text-xs">
-                          <li className="flex gap-2">• מחלה, מילואים, חופשה</li>
-                          <li className="flex gap-2">• משפיע על זמינות בדאשבורד</li>
-                          <li className="flex gap-2">• דיוח הוצאות (צילום קבלה מהנייד)</li>
-                        </ul>
-                      </div>
-                   </div>
-                 </div>
-
-                 <InfoCard title="אוטומציית חיובים והתחשבנות" icon={<Calculator />}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-3">
-                        <div className="p-3 bg-white border rounded-xl flex items-center justify-between shadow-sm">
-                          <span className="text-xs font-bold">בנק שעות</span>
-                          <span className="text-[10px] text-amber-600">התראה ב-10% יתרה</span>
-                        </div>
-                        <div className="p-3 bg-white border rounded-xl flex items-center justify-between shadow-sm">
-                          <span className="text-xs font-bold">חשבוניות API</span>
-                          <span className="text-[10px] text-amber-600">הפקה בסימון אבן דרך</span>
-                        </div>
-                      </div>
-                      <div className="p-4 bg-slate-900 rounded-2xl text-white">
-                        <h6 className="text-xs font-bold mb-2">התחשבנות בין-מחלקתית</h6>
-                        <p className="text-[10px] font-light leading-relaxed text-slate-400">
-                          חלוקת הכנסות ועלויות בין 5 יחידות הרווח של החברה (Inter-company).
-                        </p>
-                      </div>
+                 <InfoCard title="דיווח שעות (15 דק')" icon={<Clock />}>
+                    <p className="text-sm">דיווח מדויק בקישור למשימה ואבן דרך. כולל דיווחי נע"ת (חופשה/מחלה) המשפיעים על זמינות בדשבורד.</p>
+                 </InfoCard>
+                 <InfoCard title="כספים ובילינג" icon={<Calculator />}>
+                    <div className="flex gap-4 mb-2">
+                      <div className="px-3 py-1 bg-amber-50 text-amber-700 rounded-lg text-[10px] font-bold">חשבונית ירוקה / סאמיט</div>
+                      <div className="px-3 py-1 bg-amber-50 text-amber-700 rounded-lg text-[10px] font-bold">סליקת אשראי</div>
                     </div>
+                    <p className="text-xs">ניהול הצעות מחיר מעוצבות, חיתום דיגיטלי, תנאי תשלום ותזכורות אוטומטיות.</p>
                  </InfoCard>
                </div>
-
-               <div className="space-y-6">
-                 <div className="bg-amber-900 p-8 rounded-[2rem] text-white shadow-xl h-full relative overflow-hidden">
-                   <h4 className="text-xl font-black mb-6">ניהול ספקים (Back-to-Back)</h4>
-                   <p className="text-sm font-light mb-6 text-amber-100 leading-relaxed">
-                     התניית אישור תשלום לספק משנה בקבלת תשלום מהלקוח הסופי.
-                   </p>
-                   <div className="space-y-4">
-                     <div className="p-4 bg-white/10 rounded-2xl border border-white/10">
-                       <h6 className="text-xs font-bold mb-1">אוטומציית "שלם וקבל"</h6>
-                       <p className="text-[10px] text-amber-200">סטטוס אבן דרך לקוח "שולם" -{'>'} משימת אישור תשלום לספק.</p>
-                     </div>
-                     <div className="p-4 bg-white/10 rounded-2xl border border-white/10">
-                       <h6 className="text-xs font-bold mb-1">כרטיס ספק מורחב</h6>
-                       <p className="text-[10px] text-amber-200">פרטי חשבון, תנאי תשלום (שוטף+30) ומדדי איכות.</p>
-                     </div>
-                   </div>
+               <div className="bg-amber-900 p-8 rounded-[2rem] text-white shadow-xl flex flex-col justify-between">
+                 <h4 className="text-xl font-black mb-4">ניהול ספקים (B2B)</h4>
+                 <p className="text-xs font-light text-amber-100 mb-6 leading-relaxed">
+                   ניהול ספק כקבלן משנה לפרויקט. 
+                   התניית אישור תשלום לספק בסטטוס "שולם" מהלקוח הסופי.
+                 </p>
+                 <div className="p-4 bg-white/10 rounded-2xl border border-white/10 text-[10px]">
+                   שדות: שם ספק, תחום התמחות, תנאי תשלום, מדדי איכות.
                  </div>
                </div>
             </div>
-            <RequirementTable 
-              title="פיננסים ותפעול" 
-              requirements={[
-                { id: 'f1', category: 'Finance', feature: 'דיווח שעות (רבע שעה)', priority: 'High', description: 'דיוק מקסימלי לחיוב לקוח ומעקב רווחיות' },
-                { id: 'f2', category: 'Finance', feature: 'דיווחי נע"ת (נוכחות)', priority: 'High', description: 'ניהול מחלות, מילואים וחופשות כולל הוצאות' },
-                { id: 'f3', category: 'Finance', feature: 'אוטומציית חיובים (API)', priority: 'High', description: 'חיבור למערכת הנהלת חשבונות להפקה אוטומטית' },
-                { id: 'f4', category: 'Finance', feature: 'ניהול ספקי משנה (B2B)', priority: 'High', description: 'התניית תשלום לספק בתשלום מלקוח' },
-                { id: 'f5', category: 'Finance', feature: 'התחשבנות בין-מחלקתית', priority: 'Medium', description: 'חלוקת הכנסות ועלויות בין יחידות רווח' },
-              ]} 
-            />
+            <RequirementTable title="פיננסים ותפעול" requirements={
+               fullComparisonRows.filter(r => r.cat === 'כספים' || r.cat === 'תמחור').map(r => ({
+                 id: r.req, category: r.cat, feature: r.req, priority: 'High', description: 'ניהול פיננסי'
+               }))
+             } />
           </div>
         );
 
       case 'dashboard':
         return (
           <div className="space-y-8 animate-in fade-in duration-500">
-             <h2 className="text-4xl font-black text-slate-800 border-r-8 border-indigo-600 pr-4 inline-block mb-4">דאשבורד ובקרה (Business Intelligence)</h2>
-             
+             <h2 className="text-4xl font-black text-slate-800 border-r-8 border-indigo-600 pr-4 inline-block mb-4">דאשבורד ובקרה (BI)</h2>
              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200">
-                  <h4 className="font-bold mb-6 text-slate-700">רווחיות לפי מחלקה ופרויקט (%)</h4>
+                  <h4 className="font-bold mb-6 text-slate-700">רווחיות פרויקטלית מול עלויות</h4>
                   <div className="h-72">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={profitabilityData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                        <YAxis axisLine={false} tickLine={false} />
-                        <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                        <Legend />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
                         <Bar dataKey="income" name="הכנסות (₪)" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                         <Bar dataKey="cost" name="עלויות (₪)" fill="#94a3b8" radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
-
                 <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200">
-                  <h4 className="font-bold mb-6 text-slate-700">מקורות לידים וביצועי קמפיינים</h4>
-                  <div className="h-72 flex items-center justify-center">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={leadSourceData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={60}
-                          outerRadius={100}
-                          paddingAngle={5}
-                          dataKey="value"
-                        >
-                          {leadSourceData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-
-                <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200 lg:col-span-2">
-                  <h4 className="font-bold mb-6 text-slate-700">ניצולת כח אדם שבועית (Utilization Rate)</h4>
-                  <div className="h-64">
+                  <h4 className="font-bold mb-6 text-slate-700">יעילות וניצולת עובדים</h4>
+                  <div className="h-72">
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={utilizationData}>
-                        <defs>
-                          <linearGradient id="colorUtil" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="day" axisLine={false} tickLine={false} />
-                        <YAxis axisLine={false} tickLine={false} />
+                        <XAxis dataKey="day" />
+                        <YAxis domain={[0, 100]} />
                         <Tooltip />
-                        <Area type="monotone" dataKey="utilization" stroke="#3b82f6" fillOpacity={1} fill="url(#colorUtil)" />
+                        <Area type="monotone" dataKey="utilization" stroke="#10b981" fill="#10b981" fillOpacity={0.1} />
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
              </div>
-
              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 {[
-                  { label: 'עלות ליד ממוצעת', value: '₪82', sub: 'ירידה של 12% מהחודש שעבר', color: 'text-blue-600' },
-                  { label: 'רווחיות גולמית חזויה', value: '42%', sub: 'מבוסס על צבר הזמנות נוכחי', color: 'text-emerald-600' },
-                  { label: 'ממוצע זמן טיפול (SLA)', value: '1.4h', sub: 'זמן פתיחה עד מענה ראשון', color: 'text-amber-600' },
-                  { label: 'משימות בפיגור', value: '14', sub: 'מצריך התייחסות מנהל פרויקט', color: 'text-red-600' }
+                  { label: 'עלות ליד', value: '₪82', sub: 'ירידה של 12%', color: 'text-blue-600' },
+                  { label: 'רווחיות גולמית', value: '42%', sub: 'ממוצע פרויקטים', color: 'text-emerald-600' },
+                  { label: 'זמן מענה (SLA)', value: '1.4h', sub: 'מכירות', color: 'text-amber-600' },
+                  { label: 'משימות בפיגור', value: '14', sub: 'דחוף', color: 'text-red-600' }
                 ].map((stat, i) => (
-                  <div key={i} className="p-6 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                    <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">{stat.label}</h5>
-                    <div>
-                      <div className={`text-3xl font-black ${stat.color} mb-1`}>{stat.value}</div>
-                      <div className="text-[10px] text-slate-400 font-medium">{stat.sub}</div>
-                    </div>
+                  <div key={i} className="p-6 bg-white rounded-2xl border border-slate-200 shadow-sm">
+                    <h5 className="text-[10px] font-black text-slate-400 uppercase mb-3">{stat.label}</h5>
+                    <div className={`text-3xl font-black ${stat.color}`}>{stat.value}</div>
+                    <div className="text-[10px] text-slate-400 font-medium mt-1">{stat.sub}</div>
                   </div>
                 ))}
              </div>
@@ -531,97 +475,172 @@ const App: React.FC = () => {
       case 'compare':
         return (
           <div className="space-y-8 animate-in fade-in duration-500">
-             <h2 className="text-4xl font-black text-slate-800 border-r-8 border-slate-800 pr-4 inline-block mb-4">בחינת ספקים ומערכות חלופיות</h2>
-             
+             <h2 className="text-4xl font-black text-slate-800 border-r-8 border-slate-800 pr-4 inline-block mb-4">בחינת ספקים ומערכות</h2>
              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200">
-                  <h4 className="font-bold mb-6 text-slate-700 uppercase text-sm tracking-widest">מכ"ם הערכת יכולות</h4>
+                  <h4 className="font-bold mb-6 text-slate-700 uppercase text-xs">מכ"ם השוואת יכולות</h4>
                   <div className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
                       <RadarChart cx="50%" cy="50%" outerRadius="80%" data={vendorRadar}>
-                        <PolarGrid stroke="#f1f5f9" />
-                        <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fontWeight: 700 }} />
+                        <PolarGrid />
+                        <PolarAngleAxis dataKey="subject" />
                         <PolarRadiusAxis angle={30} domain={[0, 100]} />
-                        <Radar name="Monday CRM" dataKey="Monday" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.2} />
+                        <Radar name="Scalla" dataKey="Custom" stroke="#10b981" fill="#10b981" fillOpacity={0.2} />
                         <Radar name="Firebarry" dataKey="Firebarry" stroke="#ef4444" fill="#ef4444" fillOpacity={0.2} />
-                        <Radar name="Scalla / Origami" dataKey="Custom" stroke="#10b981" fill="#10b981" fillOpacity={0.2} />
-                        <Legend iconType="circle" />
-                        <Tooltip />
+                        <Radar name="Monday" dataKey="Monday" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.2} />
+                        <Legend />
                       </RadarChart>
                     </ResponsiveContainer>
                   </div>
                </div>
-
-               <div className="space-y-6">
-                 <div className="p-10 bg-slate-900 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden">
-                   <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-blue-600 rounded-full blur-3xl opacity-20"></div>
-                   <h4 className="text-2xl font-black mb-6">סיכום המלצות לבחירה</h4>
-                   <p className="text-slate-400 text-sm leading-relaxed mb-8 font-light">
-                     בחינת המערכות מבוצעת אל מול 140+ פרמטרים פונקציונליים שהוגדרו באפיון המורחב. 
-                     הדגש הושם על יכולת ניהול פרויקטים הנדסיים מחד, ומערך שיווק אוטומטי מאידך.
-                   </p>
-                   <div className="space-y-4">
-                     <div className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10">
-                        <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center font-black">FB</div>
-                        <div>
-                          <div className="text-sm font-bold">Firebarry</div>
-                          <div className="text-[10px] text-slate-400">עמידה מקסימלית באפיון (95%)</div>
-                        </div>
-                     </div>
-                     <div className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10">
-                        <div className="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center font-black">SC</div>
-                        <div>
-                          <div className="text-sm font-bold">Scalla / Fix Digital / Origami</div>
-                          <div className="text-[10px] text-slate-400">גמישות פיתוח מלאה במחיר תחרותי</div>
-                        </div>
-                     </div>
+               <div className="bg-slate-900 p-10 rounded-[2.5rem] text-white shadow-xl">
+                 <h4 className="text-2xl font-black mb-6">סיכום המלצות</h4>
+                 <p className="text-slate-400 text-sm font-light leading-relaxed mb-8">
+                   בחינת המערכות מבוצעת אל מול 140+ פרמטרים. הדגש הוא על יכולת RTL מלאה וניהול פרויקטים מורכב ללא תלות במערכות בינה מלאכותית חיצוניות (AI).
+                 </p>
+                 <div className="space-y-4">
+                   <div className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10">
+                     <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center font-black">SC</div>
+                     <div><div className="text-sm font-bold">Scalla</div><div className="text-[10px] text-slate-400">עמידה מקסימלית באפיון</div></div>
+                   </div>
+                   <div className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10">
+                     <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center font-black">OR</div>
+                     <div><div className="text-sm font-bold">Origami</div><div className="text-[10px] text-slate-400">גמישות תפעולית גבוהה</div></div>
                    </div>
                  </div>
                </div>
              </div>
+          </div>
+        );
 
-             <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden">
-                <table className="w-full text-right border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 text-slate-500 text-[10px] font-black uppercase border-b">
-                      <th className="px-8 py-6">פרמטר בחינה כלכלי</th>
-                      <th className="px-8 py-6">Monday CRM</th>
-                      <th className="px-8 py-6">Hubspot</th>
-                      <th className="px-8 py-6">Firebarry</th>
-                      <th className="px-8 py-6">Scalla / פיקס דיגיטל / אוריגמי</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-xs font-bold text-slate-700">
-                    <tr className="hover:bg-slate-50 transition-colors">
-                      <td className="px-8 py-6">עלות הקמה משוערת</td>
-                      <td className="px-8 py-6">₪45,000 - 60,000</td>
-                      <td className="px-8 py-6">₪120,000 - 135,000</td>
-                      <td className="px-8 py-6">₪90,000 - 110,000</td>
-                      <td className="px-8 py-6 text-emerald-600">₪28,000 - 39,000</td>
-                    </tr>
-                    <tr className="hover:bg-slate-50 transition-colors">
-                      <td className="px-8 py-6">עלות חודשית למשתמש</td>
-                      <td className="px-8 py-6 font-medium">$40</td>
-                      <td className="px-8 py-6 font-medium">$65 - $75</td>
-                      <td className="px-8 py-6 font-medium">₪150 - 190</td>
-                      <td className="px-8 py-6 font-medium">₪180 - 240</td>
-                    </tr>
-                    <tr className="hover:bg-slate-50 transition-colors">
-                      <td className="px-8 py-6">תלות במערכות צד ג'</td>
-                      <td className="px-8 py-6 text-red-500 uppercase">גבוהה מאוד</td>
-                      <td className="px-8 py-6 text-red-500 uppercase">גבוהה מאוד</td>
-                      <td className="px-8 py-6 text-amber-500 uppercase">גבוהה</td>
-                      <td className="px-8 py-6 text-emerald-500 uppercase">0% - 70%</td>
-                    </tr>
-                    <tr className="hover:bg-slate-50 transition-colors bg-slate-50/50">
-                      <td className="px-8 py-6 text-sm">יכולת עמידה במסמך אפיון</td>
-                      <td className="px-8 py-6 text-sm text-amber-500">75% - 80%</td>
-                      <td className="px-8 py-6 text-sm text-amber-500">82% - 84%</td>
-                      <td className="px-8 py-6 text-sm text-emerald-600 font-black">95%</td>
-                      <td className="px-8 py-6 text-sm text-emerald-600">88% - 96%</td>
-                    </tr>
-                  </tbody>
-                </table>
+      case 'summary':
+        return (
+          <div className="space-y-12 animate-in fade-in duration-500 pb-32">
+             <div className="flex flex-col md:flex-row justify-between items-end gap-6 border-b border-slate-200 pb-8">
+               <div>
+                <h2 className="text-4xl font-black text-slate-800 border-r-8 border-slate-900 pr-4 inline-block">סיכום אפיון והשוואה מלאה</h2>
+                <p className="text-slate-400 font-medium mt-2">סקירה שקופה של 100+ סעיפי האפיון אל מול חלופות השוק</p>
+               </div>
+               <div className="flex gap-4">
+                 <div className="px-6 py-3 bg-blue-50 border border-blue-100 rounded-2xl text-center">
+                   <div className="text-[10px] font-black text-blue-400 uppercase">עמידה מקסימלית</div>
+                   <div className="text-xl font-black text-blue-900">Scalla (94%)</div>
+                 </div>
+                 <div className="px-6 py-3 bg-emerald-50 border border-emerald-100 rounded-2xl text-center shadow-lg shadow-emerald-500/10">
+                   <div className="text-[10px] font-black text-emerald-400 uppercase">הכי כלכלי</div>
+                   <div className="text-xl font-black text-emerald-900">Scalla</div>
+                 </div>
+               </div>
+             </div>
+             
+             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+               <div className="lg:col-span-2 p-10 bg-slate-900 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden flex flex-col justify-between">
+                 <div className="relative z-10">
+                   <div className="flex items-center gap-3 mb-6">
+                     <div className="p-3 bg-emerald-500 rounded-2xl shadow-lg shadow-emerald-500/20"><TrendingUp size={28} /></div>
+                     <h3 className="text-2xl font-black">המלצת היישום והדירוג הכלכלי</h3>
+                   </div>
+                   <p className="text-slate-300 text-lg leading-relaxed mb-8 font-light">
+                     על בסיס הניתוח המפורט, המערכת המשתלמת ביותר כלכלית ביחס לתועלת היא <strong>Scalla</strong>, 
+                     כאשר מיד אחריה מדורגות <strong>Origami</strong> ו-<strong>Firebarry</strong>.
+                   </p>
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                     <div className="p-5 bg-white/5 border border-white/10 rounded-2xl relative overflow-hidden">
+                       <div className="absolute top-0 right-0 p-2 bg-emerald-500 text-[8px] font-black uppercase">דירוג 1</div>
+                       <h4 className="font-bold text-emerald-400 mb-2 flex items-center gap-2">Scalla</h4>
+                       <p className="text-[10px] text-slate-400 leading-relaxed">הכי כלכלית: ROI מהיר ויכולות Native רחבות ללא צורך בתוספים יקרים.</p>
+                     </div>
+                     <div className="p-5 bg-white/5 border border-white/10 rounded-2xl relative overflow-hidden">
+                       <div className="absolute top-0 right-0 p-2 bg-blue-500 text-[8px] font-black uppercase">דירוג 2</div>
+                       <h4 className="font-bold text-blue-400 mb-2 flex items-center gap-2">Origami</h4>
+                       <p className="text-[10px] text-slate-400 leading-relaxed">איזון מעולה בין גמישות להקמת שדות עצמאית ועלות חודשית סבירה.</p>
+                     </div>
+                     <div className="p-5 bg-white/5 border border-white/10 rounded-2xl relative overflow-hidden">
+                       <div className="absolute top-0 right-0 p-2 bg-amber-500 text-[8px] font-black uppercase">דירוג 3</div>
+                       <h4 className="font-bold text-amber-400 mb-2 flex items-center gap-2">Firebarry</h4>
+                       <p className="text-[10px] text-slate-400 leading-relaxed">פתרון פרימיום למערכי שיווק גדולים, יקרה יותר אך עוצמתית ב-SaaS.</p>
+                     </div>
+                   </div>
+                 </div>
+               </div>
+
+               <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-200">
+                  <h4 className="font-black mb-8 text-slate-700 flex items-center gap-2 uppercase tracking-widest text-xs">
+                    <BarChart3 className="text-blue-600" size={18} />
+                    דירוג עמידות באפיון (%)
+                  </h4>
+                  <div className="h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={complianceData} layout="vertical" margin={{ left: 40 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={false} stroke="#f1f5f9" />
+                        <XAxis type="number" domain={[0, 100]} hide />
+                        <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 700, fill: '#64748b' }} />
+                        <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                        <Bar dataKey="percentage" name="עמידה (%)" fill="#1e3a8a" radius={[0, 8, 8, 0]} barSize={26}>
+                          {complianceData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COMPLIANCE_COLORS[index % COMPLIANCE_COLORS.length]} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+               </div>
+             </div>
+
+             <div className="bg-white rounded-[2.5rem] shadow-2xl border border-slate-200 overflow-hidden">
+                <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-slate-900 rounded-xl text-white"><Info size={20} /></div>
+                    <h3 className="text-xl font-black text-slate-800">פירוט אפיון מלא (100+ סעיפים)</h3>
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 bg-white px-3 py-1.5 rounded-full border shadow-sm">
+                      <div className="w-3 h-3 rounded-full bg-emerald-500"></div> יש / מלא
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 bg-white px-3 py-1.5 rounded-full border shadow-sm">
+                      <div className="w-3 h-3 rounded-full bg-amber-400"></div> חלקי / בבדיקה
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 bg-white px-3 py-1.5 rounded-full border shadow-sm">
+                      <div className="w-3 h-3 rounded-full bg-red-400"></div> אין / חסר
+                    </div>
+                  </div>
+                </div>
+                <div className="overflow-x-auto max-h-[800px]">
+                  <table className="w-full text-right border-collapse table-auto">
+                    <thead>
+                      <tr className="bg-slate-900 text-white text-[10px] font-black uppercase sticky top-0 z-20 shadow-lg">
+                        <th className="px-6 py-6 border-l border-white/5 w-[350px]">נושא וסעיף האפיון</th>
+                        <th className="px-4 py-6 border-l border-white/5 text-center min-w-[80px]">Monday</th>
+                        <th className="px-4 py-6 border-l border-white/5 text-center min-w-[80px]">Hubspot</th>
+                        <th className="px-4 py-6 border-l border-white/5 text-center min-w-[80px]">Firebarry</th>
+                        <th className="px-4 py-6 border-l border-white/5 text-center bg-blue-800 min-w-[80px]">Scalla</th>
+                        <th className="px-4 py-6 border-l border-white/5 text-center bg-emerald-700 min-w-[80px]">origami</th>
+                        <th className="px-4 py-6 text-center min-w-[80px]">fix digital</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {fullComparisonRows.map((row, i) => (
+                        <tr key={i} className={`hover:bg-slate-50 transition-colors group ${row.cat === 'תמחור' ? 'bg-slate-50/80 font-bold' : ''}`}>
+                          <td className="px-6 py-4 border-l">
+                            <div className="flex flex-col">
+                              <span className="text-[9px] text-slate-400 font-black uppercase tracking-tighter mb-0.5 group-hover:text-blue-500 transition-colors">{row.cat}</span>
+                              <span className="text-[11px] text-slate-700 font-semibold leading-snug">{row.req}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 border-l text-center"><StatusIcon status={row.mon} /></td>
+                          <td className="px-4 py-4 border-l text-center"><StatusIcon status={row.hub} /></td>
+                          <td className="px-4 py-4 border-l text-center"><StatusIcon status={row.fir} /></td>
+                          <td className="px-4 py-4 border-l text-center bg-blue-50/40"><StatusIcon status={row.sca} /></td>
+                          <td className="px-4 py-4 border-l text-center bg-emerald-50/40"><StatusIcon status={row.ori} /></td>
+                          <td className="px-4 py-4 text-center"><StatusIcon status={row.fix} /></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="bg-slate-50 p-6 text-center border-t">
+                  <p className="text-xs text-slate-400 font-medium">מסמך זה מהווה חלק בלתי נפרד מהסכם האפיון והגדרת הצרכים - בילד אסטרטגיה אורבנית 2025</p>
+                </div>
              </div>
           </div>
         );
@@ -643,7 +662,7 @@ const App: React.FC = () => {
           <p className="text-[10px] text-[#2563eb] uppercase tracking-[0.2em] font-black mt-2 bg-blue-50 px-3 py-1 rounded-full">CRM MASTER PLAN v2.5</p>
         </div>
         
-        <nav className="flex-1 p-6 space-y-3 overflow-y-auto">
+        <nav className="flex-1 p-6 space-y-2 overflow-y-auto">
           {menuItems.map((item) => (
             <button
               key={item.id}
@@ -675,7 +694,7 @@ const App: React.FC = () => {
 
       {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto p-6 lg:p-14 relative scroll-smooth bg-slate-50/30">
-        <div className="max-w-6xl mx-auto pb-32">
+        <div className="max-w-7xl mx-auto pb-32">
           {renderContent()}
         </div>
 
